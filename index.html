@@ -6,6 +6,7 @@
   <title>Portfolio Tracker Pro 2025</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Todos los estilos anteriores se mantienen igual */
     :root {
       --primary: #2563eb;
       --primary-dark: #1d4ed8;
@@ -646,6 +647,36 @@
     .risk-dot.high {
       background: var(--high-risk);
     }
+
+    /* Nuevos estilos para dividendos */
+    .dividend-yield {
+      font-weight: 600;
+    }
+    
+    .dividend-yield.positive {
+      color: var(--secondary);
+    }
+    
+    .dividend-yield.zero {
+      color: var(--gray);
+    }
+    
+    .total-return {
+      font-weight: 700;
+    }
+    
+    .dividend-breakdown {
+      background: rgba(16, 185, 129, 0.05);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 15px;
+    }
+    
+    .dividend-breakdown h4 {
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--dark);
+    }
   </style>
 </head>
 <body>
@@ -782,6 +813,16 @@
               <label for="expectedReturn">Rendimiento anual esperado (%)</label>
               <input type="number" id="expectedReturn" value="7.2" min="0" max="50" step="0.1">
             </div>
+            <div class="input-group">
+              <label for="dividendYield">Dividendos anuales (%)</label>
+              <input type="number" id="dividendYield" value="2.1" min="0" max="20" step="0.1">
+            </div>
+            <div class="input-group">
+              <label for="reinvestDividends">
+                <input type="checkbox" id="reinvestDividends" checked>
+                Reinvertir dividendos
+              </label>
+            </div>
             <button class="btn btn-secondary" id="calculateBtn">
               <i class="fas fa-chart-bar"></i> Calcular Proyección
             </button>
@@ -822,6 +863,11 @@
           
           <div id="portfolioComposition" class="portfolio-composition">
             <!-- Se llenará dinámicamente -->
+          </div>
+          
+          <div class="dividend-breakdown" id="dividendBreakdown">
+            <h4>Desglose de Dividendos</h4>
+            <div id="dividendDetails">Cargando información de dividendos...</div>
           </div>
           
           <div class="data-source" style="margin-top: 10px;">
@@ -865,31 +911,31 @@
     // DATOS ACTUALIZADOS 2025 - Incluyendo fondos indexados y diferentes tipos de activos
     const investmentData = {
       buffett: [
-        { company: "Apple (AAPL)", percentage: 48.5, value: 182400, change: 0, annualReturn: 18.2, type: "stock", risk: "medium" },
-        { company: "Bank of America (BAC)", percentage: 8.7, value: 32600, change: 0, annualReturn: 12.8, type: "stock", risk: "medium" },
-        { company: "American Express (AXP)", percentage: 7.2, value: 27000, change: 0, annualReturn: 15.3, type: "stock", risk: "medium" },
-        { company: "Coca-Cola (KO)", percentage: 6.9, value: 25900, change: 0, annualReturn: 4.2, type: "stock", risk: "low" },
-        { company: "Chevron (CVX)", percentage: 5.5, value: 20600, change: 0, annualReturn: 8.7, type: "stock", risk: "medium" },
-        { company: "S&P 500 ETF (SPY)", percentage: 4.8, value: 18000, change: 0, annualReturn: 10.5, type: "etf", risk: "low" },
-        { company: "Berkshire Hathaway (BRK.B)", percentage: 3.2, value: 12000, change: 0, annualReturn: 11.2, type: "stock", risk: "medium" }
+        { company: "Apple (AAPL)", percentage: 48.5, value: 182400, change: 0, annualReturn: 18.2, dividendYield: 0.6, type: "stock", risk: "medium" },
+        { company: "Bank of America (BAC)", percentage: 8.7, value: 32600, change: 0, annualReturn: 12.8, dividendYield: 2.8, type: "stock", risk: "medium" },
+        { company: "American Express (AXP)", percentage: 7.2, value: 27000, change: 0, annualReturn: 15.3, dividendYield: 1.2, type: "stock", risk: "medium" },
+        { company: "Coca-Cola (KO)", percentage: 6.9, value: 25900, change: 0, annualReturn: 4.2, dividendYield: 3.1, type: "stock", risk: "low" },
+        { company: "Chevron (CVX)", percentage: 5.5, value: 20600, change: 0, annualReturn: 8.7, dividendYield: 4.2, type: "stock", risk: "medium" },
+        { company: "S&P 500 ETF (SPY)", percentage: 4.8, value: 18000, change: 0, annualReturn: 10.5, dividendYield: 1.5, type: "etf", risk: "low" },
+        { company: "Berkshire Hathaway (BRK.B)", percentage: 3.2, value: 12000, change: 0, annualReturn: 11.2, dividendYield: 0, type: "stock", risk: "medium" }
       ],
       blackrock: [
-        { company: "Microsoft (MSFT)", percentage: 4.5, value: 142500, change: 0, annualReturn: 22.4, type: "stock", risk: "medium" },
-        { company: "Apple (AAPL)", percentage: 4.2, value: 133200, change: 0, annualReturn: 18.2, type: "stock", risk: "medium" },
-        { company: "Nvidia (NVDA)", percentage: 3.1, value: 98200, change: 0, annualReturn: 68.5, type: "stock", risk: "high" },
-        { company: "Amazon (AMZN)", percentage: 2.8, value: 88700, change: 0, annualReturn: 32.7, type: "stock", risk: "high" },
-        { company: "Alphabet (GOOGL)", percentage: 2.3, value: 72800, change: 0, annualReturn: 28.4, type: "stock", risk: "medium" },
-        { company: "S&P 500 ETF (SPY)", percentage: 2.1, value: 66500, change: 0, annualReturn: 10.5, type: "etf", risk: "low" },
-        { company: "Tesla (TSLA)", percentage: 1.9, value: 60100, change: 0, annualReturn: -5.2, type: "stock", risk: "high" },
-        { company: "Total Stock Market ETF (VTI)", percentage: 1.7, value: 53800, change: 0, annualReturn: 11.8, type: "etf", risk: "low" }
+        { company: "Microsoft (MSFT)", percentage: 4.5, value: 142500, change: 0, annualReturn: 22.4, dividendYield: 0.8, type: "stock", risk: "medium" },
+        { company: "Apple (AAPL)", percentage: 4.2, value: 133200, change: 0, annualReturn: 18.2, dividendYield: 0.6, type: "stock", risk: "medium" },
+        { company: "Nvidia (NVDA)", percentage: 3.1, value: 98200, change: 0, annualReturn: 68.5, dividendYield: 0.04, type: "stock", risk: "high" },
+        { company: "Amazon (AMZN)", percentage: 2.8, value: 88700, change: 0, annualReturn: 32.7, dividendYield: 0, type: "stock", risk: "high" },
+        { company: "Alphabet (GOOGL)", percentage: 2.3, value: 72800, change: 0, annualReturn: 28.4, dividendYield: 0, type: "stock", risk: "medium" },
+        { company: "S&P 500 ETF (SPY)", percentage: 2.1, value: 66500, change: 0, annualReturn: 10.5, dividendYield: 1.5, type: "etf", risk: "low" },
+        { company: "Tesla (TSLA)", percentage: 1.9, value: 60100, change: 0, annualReturn: -5.2, dividendYield: 0, type: "stock", risk: "high" },
+        { company: "Total Stock Market ETF (VTI)", percentage: 1.7, value: 53800, change: 0, annualReturn: 11.8, dividendYield: 1.4, type: "etf", risk: "low" }
       ],
       pelosi: [
-        { company: "Apple (AAPL)", type: "Compra", date: "2025-06-15", value: 650000, change: "nuevo", annualReturn: 18.2, assetType: "stock", risk: "medium" },
-        { company: "Microsoft (MSFT)", type: "Compra", date: "2025-05-22", value: 420000, change: "nuevo", annualReturn: 22.4, assetType: "stock", risk: "medium" },
-        { company: "Nvidia (NVDA)", type: "Compra", date: "2025-04-18", value: 280000, change: "aumento", annualReturn: 68.5, assetType: "stock", risk: "high" },
-        { company: "S&P 500 ETF (SPY)", type: "Compra", date: "2025-03-10", value: 350000, change: "aumento", annualReturn: 10.5, assetType: "etf", risk: "low" },
-        { company: "Alphabet (GOOGL)", type: "Compra", date: "2025-02-05", value: 320000, change: "nuevo", annualReturn: 28.4, assetType: "stock", risk: "medium" },
-        { company: "Salesforce (CRM)", type: "Venta", date: "2025-01-20", value: 180000, change: "disminucion", annualReturn: 14.3, assetType: "stock", risk: "medium" }
+        { company: "Apple (AAPL)", type: "Compra", date: "2025-06-15", value: 650000, change: "nuevo", annualReturn: 18.2, dividendYield: 0.6, assetType: "stock", risk: "medium" },
+        { company: "Microsoft (MSFT)", type: "Compra", date: "2025-05-22", value: 420000, change: "nuevo", annualReturn: 22.4, dividendYield: 0.8, assetType: "stock", risk: "medium" },
+        { company: "Nvidia (NVDA)", type: "Compra", date: "2025-04-18", value: 280000, change: "aumento", annualReturn: 68.5, dividendYield: 0.04, assetType: "stock", risk: "high" },
+        { company: "S&P 500 ETF (SPY)", type: "Compra", date: "2025-03-10", value: 350000, change: "aumento", annualReturn: 10.5, dividendYield: 1.5, assetType: "etf", risk: "low" },
+        { company: "Alphabet (GOOGL)", type: "Compra", date: "2025-02-05", value: 320000, change: "nuevo", annualReturn: 28.4, dividendYield: 0, assetType: "stock", risk: "medium" },
+        { company: "Salesforce (CRM)", type: "Venta", date: "2025-01-20", value: 180000, change: "disminucion", annualReturn: 14.3, dividendYield: 0, assetType: "stock", risk: "medium" }
       ]
     };
 
@@ -897,6 +943,7 @@
     let activities = [];
     let lastUpdate = null;
     let portfolioReturn = 0;
+    let portfolioDividendYield = 0;
     let currentRiskLevel = "low";
 
     // Inicializar la aplicación
@@ -973,7 +1020,7 @@
       document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
       document.getElementById(tabId).classList.add('active');
 
-      // Si es la pestaña de actividad, renderizarla
+      // Si es la pestaña de actividad, actualizarla
       if (tabId === 'activity') {
         renderActivityLog();
       }
@@ -1005,6 +1052,8 @@
               <th>% Part.</th>
               <th>Valor (M$)</th>
               <th>Rendimiento<span class="return-period">(12 meses)</span></th>
+              <th>Dividendos</th>
+              <th>Rendimiento Total</th>
               <th>Tipo</th>
               <th>Riesgo</th>
             </tr>
@@ -1018,6 +1067,9 @@
         const riskBadgeClass = `badge-${item.risk}-risk`;
         const riskText = item.risk === 'low' ? 'Bajo' : item.risk === 'medium' ? 'Medio' : 'Alto';
         const typeText = item.type === 'etf' ? 'ETF' : 'Acción';
+        const dividendClass = item.dividendYield > 0 ? 'dividend-yield positive' : 'dividend-yield zero';
+        const totalReturn = item.annualReturn + item.dividendYield;
+        const totalReturnClass = totalReturn >= 0 ? 'positive' : 'negative';
         
         html += `
           <tr>
@@ -1025,6 +1077,8 @@
             <td>${item.percentage.toFixed(1)}%</td>
             <td>$${(item.value / 1000).toFixed(0)}B</td>
             <td class="${returnClass}">${returnSymbol} ${item.annualReturn.toFixed(1)}%</td>
+            <td class="${dividendClass}">${item.dividendYield > 0 ? '💰 ' + item.dividendYield.toFixed(2) + '%' : '—'}</td>
+            <td class="${totalReturnClass} total-return">${totalReturn.toFixed(1)}%</td>
             <td>${typeText}</td>
             <td><span class="badge ${riskBadgeClass}">${riskText}</span></td>
           </tr>
@@ -1052,6 +1106,8 @@
               <th>Fecha</th>
               <th>Valor ($)</th>
               <th>Rendimiento<span class="return-period">(12 meses)</span></th>
+              <th>Dividendos</th>
+              <th>Rendimiento Total</th>
               <th>Tipo Activo</th>
               <th>Riesgo</th>
             </tr>
@@ -1066,6 +1122,9 @@
         const riskBadgeClass = `badge-${item.risk}-risk`;
         const riskText = item.risk === 'low' ? 'Bajo' : item.risk === 'medium' ? 'Medio' : 'Alto';
         const assetTypeText = item.assetType === 'etf' ? 'ETF' : 'Acción';
+        const dividendClass = item.dividendYield > 0 ? 'dividend-yield positive' : 'dividend-yield zero';
+        const totalReturn = item.annualReturn + item.dividendYield;
+        const totalReturnClass = totalReturn >= 0 ? 'positive' : 'negative';
         
         html += `
           <tr>
@@ -1074,6 +1133,8 @@
             <td>${item.date}</td>
             <td>$${item.value.toLocaleString()}</td>
             <td class="${returnClass}">${returnSymbol} ${item.annualReturn.toFixed(1)}%</td>
+            <td class="${dividendClass}">${item.dividendYield > 0 ? '💰 ' + item.dividendYield.toFixed(2) + '%' : '—'}</td>
+            <td class="${totalReturnClass} total-return">${totalReturn.toFixed(1)}%</td>
             <td>${assetTypeText}</td>
             <td><span class="badge ${riskBadgeClass}">${riskText}</span></td>
           </tr>
@@ -1095,6 +1156,7 @@
             company: item.company,
             percentage: item.percentage * 0.4,
             annualReturn: item.annualReturn,
+            dividendYield: item.dividendYield,
             source: 'Buffett',
             type: item.type,
             risk: item.risk
@@ -1109,6 +1171,7 @@
             company: item.company,
             percentage: item.percentage * 0.4,
             annualReturn: item.annualReturn,
+            dividendYield: item.dividendYield,
             source: 'BlackRock',
             type: item.type,
             risk: item.risk
@@ -1125,6 +1188,7 @@
           company: item.company,
           percentage: pelosiWeight,
           annualReturn: item.annualReturn,
+          dividendYield: item.dividendYield,
           source: 'Pelosi',
           type: item.assetType,
           risk: item.risk
@@ -1142,6 +1206,7 @@
             company: item.company,
             percentage: item.percentage * 0.4 * weight,
             annualReturn: item.annualReturn,
+            dividendYield: item.dividendYield,
             source: 'Buffett',
             type: item.type,
             risk: item.risk
@@ -1154,6 +1219,7 @@
             company: item.company,
             percentage: item.percentage * 0.4 * weight,
             annualReturn: item.annualReturn,
+            dividendYield: item.dividendYield,
             source: 'BlackRock',
             type: item.type,
             risk: item.risk
@@ -1169,6 +1235,7 @@
             company: item.company,
             percentage: adjustedPelosiWeight * weight,
             annualReturn: item.annualReturn,
+            dividendYield: item.dividendYield,
             source: 'Pelosi',
             type: item.assetType,
             risk: item.risk
@@ -1184,6 +1251,7 @@
             company: inv.company,
             percentage: 0,
             annualReturn: 0,
+            dividendYield: 0,
             sources: [],
             count: 0,
             type: inv.type,
@@ -1193,6 +1261,7 @@
         
         companyMap[inv.company].percentage += inv.percentage;
         companyMap[inv.company].annualReturn += inv.annualReturn;
+        companyMap[inv.company].dividendYield += inv.dividendYield;
         companyMap[inv.company].count += 1;
         
         if (!companyMap[inv.company].sources.includes(inv.source)) {
@@ -1200,9 +1269,10 @@
         }
       });
       
-      // Calcular promedio de rendimiento
+      // Calcular promedio de rendimiento y dividendos
       Object.keys(companyMap).forEach(company => {
         companyMap[company].annualReturn = companyMap[company].annualReturn / companyMap[company].count;
+        companyMap[company].dividendYield = companyMap[company].dividendYield / companyMap[company].count;
       });
       
       // Convertir a array y ordenar
@@ -1220,13 +1290,16 @@
       
       // Calcular rendimiento de cartera (promedio ponderado)
       let weightedReturn = 0;
+      let weightedDividendYield = 0;
       let totalWeight = 0;
       recommendedPortfolio.forEach(item => {
         weightedReturn += (item.percentage / 100) * item.annualReturn;
+        weightedDividendYield += (item.percentage / 100) * item.dividendYield;
         totalWeight += item.percentage / 100;
       });
       
       portfolioReturn = totalWeight > 0 ? weightedReturn / totalWeight : 0;
+      portfolioDividendYield = totalWeight > 0 ? weightedDividendYield / totalWeight : 0;
       
       // Ajustar según nivel de riesgo
       portfolioReturn = adjustReturnByRisk(portfolioReturn, currentRiskLevel);
@@ -1281,11 +1354,26 @@
       let html = `
         <div class="performance-card">
           <div>
-            <div class="performance-value">${portfolioReturn.toFixed(1)}%</div>
-            <div class="performance-label">Rendimiento anual esperado</div>
+            <div class="performance-value">${(portfolioReturn + portfolioDividendYield).toFixed(1)}%</div>
+            <div class="performance-label">Rendimiento total anual esperado</div>
           </div>
           <div class="badge badge-${currentRiskLevel}-risk">
             ${currentRiskLevel === 'low' ? 'Bajo Riesgo' : currentRiskLevel === 'medium' ? 'Riesgo Medio' : 'Alto Riesgo'}
+          </div>
+        </div>
+        <div class="dividend-breakdown">
+          <h4>Desglose del Rendimiento</h4>
+          <div class="result-item">
+            <span>Apreciación del capital:</span>
+            <span class="positive">${portfolioReturn.toFixed(1)}%</span>
+          </div>
+          <div class="result-item">
+            <span>Dividendos:</span>
+            <span class="positive">${portfolioDividendYield.toFixed(1)}%</span>
+          </div>
+          <div class="result-item">
+            <span><strong>Total:</strong></span>
+            <span class="positive total-return"><strong>${(portfolioReturn + portfolioDividendYield).toFixed(1)}%</strong></span>
           </div>
         </div>
         <div class="data-source" style="margin-bottom: 15px;">
@@ -1297,6 +1385,8 @@
               <th>Activo</th>
               <th>% Recom.</th>
               <th>Rendimiento<span class="return-period">(12 meses)</span></th>
+              <th>Dividendos</th>
+              <th>Rendimiento Total</th>
               <th>Tipo</th>
               <th>Riesgo</th>
               <th>Fuentes</th>
@@ -1308,7 +1398,7 @@
       if (recommendedPortfolio.length === 0) {
         html += `
           <tr>
-            <td colspan="6" style="text-align: center; padding: 40px;">
+            <td colspan="8" style="text-align: center; padding: 40px;">
               <div class="empty-state">
                 <i class="fas fa-exclamation-circle"></i>
                 <p>No hay suficientes datos para generar una cartera con este nivel de riesgo</p>
@@ -1323,12 +1413,17 @@
           const riskBadgeClass = `badge-${item.risk}-risk`;
           const riskText = item.risk === 'low' ? 'Bajo' : item.risk === 'medium' ? 'Medio' : 'Alto';
           const typeText = item.type === 'etf' ? 'ETF' : 'Acción';
+          const dividendClass = item.dividendYield > 0 ? 'dividend-yield positive' : 'dividend-yield zero';
+          const totalReturn = item.annualReturn + item.dividendYield;
+          const totalReturnClass = totalReturn >= 0 ? 'positive' : 'negative';
           
           html += `
             <tr>
               <td>${item.company}</td>
               <td>${item.percentage.toFixed(1)}%</td>
               <td class="${returnClass}">${returnSymbol} ${item.annualReturn.toFixed(1)}%</td>
+              <td class="${dividendClass}">${item.dividendYield > 0 ? '💰 ' + item.dividendYield.toFixed(2) + '%' : '—'}</td>
+              <td class="${totalReturnClass} total-return">${totalReturn.toFixed(1)}%</td>
               <td>${typeText}</td>
               <td><span class="badge ${riskBadgeClass}">${riskText}</span></td>
               <td>${item.sources.join(', ')}</td>
@@ -1377,9 +1472,9 @@
           </div>
         </div>
         <div class="progress-bar">
-          <div class="progress" style="width: ${(portfolioReturn / 25) * 100}%"></div>
+          <div class="progress" style="width: ${((portfolioReturn + portfolioDividendYield) / 30) * 100}%"></div>
         </div>
-        <div class="performance-label">Rendimiento vs. Máximo realista (25%)</div>
+        <div class="performance-label">Rendimiento total vs. Máximo realista (30%)</div>
         <div class="portfolio-composition">
           <div class="composition-item">
             <div class="composition-value">${stockPercentage.toFixed(0)}%</div>
@@ -1435,23 +1530,50 @@
     }
 
     function updateExpectedReturn() {
-      document.getElementById('expectedReturnValue').textContent = `${portfolioReturn.toFixed(1)}%`;
+      const totalReturn = portfolioReturn + portfolioDividendYield;
+      document.getElementById('expectedReturnValue').textContent = `${totalReturn.toFixed(1)}%`;
       
       let returnStatus = '';
-      if (portfolioReturn >= 15) {
+      if (totalReturn >= 15) {
         returnStatus = 'Alto';
-      } else if (portfolioReturn >= 8) {
+      } else if (totalReturn >= 8) {
         returnStatus = 'Moderado';
       } else {
         returnStatus = 'Bajo';
       }
       
       document.getElementById('returnStatus').textContent = returnStatus;
-      document.getElementById('returnStatus').className = `badge ${portfolioReturn >= 15 ? 'badge-success' : portfolioReturn >= 8 ? 'badge-warning' : 'badge-danger'}`;
-      document.getElementById('returnProgress').style.width = `${(portfolioReturn / 25) * 100}%`;
+      document.getElementById('returnStatus').className = `badge ${totalReturn >= 15 ? 'badge-success' : totalReturn >= 8 ? 'badge-warning' : 'badge-danger'}`;
+      document.getElementById('returnProgress').style.width = `${(totalReturn / 30) * 100}%`;
       
       // Actualizar también el campo de la calculadora
       document.getElementById('expectedReturn').value = portfolioReturn.toFixed(1);
+      document.getElementById('dividendYield').value = portfolioDividendYield.toFixed(1);
+      
+      // Actualizar desglose de dividendos
+      updateDividendBreakdown();
+    }
+    
+    function updateDividendBreakdown() {
+      const container = document.getElementById('dividendDetails');
+      const totalReturn = portfolioReturn + portfolioDividendYield;
+      
+      const html = `
+        <div class="result-item">
+          <span>Apreciación del capital:</span>
+          <span class="positive">${portfolioReturn.toFixed(1)}%</span>
+        </div>
+        <div class="result-item">
+          <span>Ingresos por dividendos:</span>
+          <span class="positive">${portfolioDividendYield.toFixed(1)}%</span>
+        </div>
+        <div class="result-item">
+          <span><strong>Rendimiento total:</strong></span>
+          <span class="positive total-return"><strong>${totalReturn.toFixed(1)}%</strong></span>
+        </div>
+      `;
+      
+      container.innerHTML = html;
     }
 
     function calculateProjection() {
@@ -1459,6 +1581,8 @@
       const monthlyContribution = parseFloat(document.getElementById('monthlyContribution').value);
       const years = parseInt(document.getElementById('investmentYears').value);
       const annualReturn = parseFloat(document.getElementById('expectedReturn').value) / 100;
+      const dividendYield = parseFloat(document.getElementById('dividendYield').value) / 100;
+      const reinvestDividends = document.getElementById('reinvestDividends').checked;
       
       if (isNaN(initialAmount) || initialAmount <= 0) {
         showNotification('Por favor, ingresa un monto inicial válido', 'error');
@@ -1467,18 +1591,42 @@
       
       // Calcular proyección
       let balance = initialAmount;
-      const monthlyReturn = Math.pow(1 + annualReturn, 1/12) - 1;
+      const totalAnnualReturn = annualReturn + (reinvestDividends ? dividendYield : 0);
+      const monthlyReturn = Math.pow(1 + totalAnnualReturn, 1/12) - 1;
       const months = years * 12;
+      
+      // Calcular el balance final incluyendo todas las aportaciones mensuales
+      for (let month = 0; month < months; month++) {
+        balance = balance * (1 + monthlyReturn) + monthlyContribution;
+      }
+      
+      const totalContributed = initialAmount + (monthlyContribution * months);
+      const finalBalance = balance;
       
       let projectionHTML = `
         <div class="performance-card">
           <div>
-            <div class="performance-value">€${(initialAmount + (monthlyContribution * months)).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div class="performance-value">€${totalContributed.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
             <div class="performance-label">Total aportado</div>
           </div>
           <div>
-            <div class="performance-value">€${(initialAmount * Math.pow(1 + annualReturn, years)).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+            <div class="performance-value">€${finalBalance.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
             <div class="performance-label">Valor proyectado</div>
+          </div>
+        </div>
+        <div class="dividend-breakdown">
+          <h4>Desglose del Rendimiento</h4>
+          <div class="result-item">
+            <span>Apreciación del capital:</span>
+            <span class="positive">${(annualReturn * 100).toFixed(1)}%</span>
+          </div>
+          <div class="result-item">
+            <span>Dividendos:</span>
+            <span class="positive">${(dividendYield * 100).toFixed(1)}%</span>
+          </div>
+          <div class="result-item">
+            <span><strong>Total:</strong></span>
+            <span class="positive total-return"><strong>${(totalAnnualReturn * 100).toFixed(1)}%</strong></span>
           </div>
         </div>
         <h3 style="margin: 20px 0 10px 0;">Proyección por año</h3>
@@ -1494,22 +1642,24 @@
           <tbody>
       `;
       
+      // Calcular proyección año por año
+      let yearlyBalance = initialAmount;
       for (let year = 1; year <= years; year++) {
         // Calcular balance después de este año
         for (let month = 0; month < 12; month++) {
-          balance = balance * (1 + monthlyReturn) + monthlyContribution;
+          yearlyBalance = yearlyBalance * (1 + monthlyReturn) + monthlyContribution;
         }
         
-        const totalContributed = initialAmount + (monthlyContribution * 12 * year);
-        const earnings = balance - totalContributed;
+        const totalContributedByYear = initialAmount + (monthlyContribution * 12 * year);
+        const earnings = yearlyBalance - totalContributedByYear;
         
         // Mostrar cada 5 años o el último año
         if (year === 1 || year === years || year % 5 === 0) {
           projectionHTML += `
             <tr>
               <td>${year}</td>
-              <td>€${totalContributed.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-              <td>€${balance.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+              <td>€${totalContributedByYear.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+              <td>€${yearlyBalance.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
               <td class="${earnings >= 0 ? 'positive' : 'negative'}">€${earnings.toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
             </tr>
           `;
@@ -1519,14 +1669,15 @@
       projectionHTML += `</tbody></table>`;
       document.getElementById('calculationResults').innerHTML = projectionHTML;
       
-      addActivity(`Proyección calculada: €${initialAmount} inicial + €${monthlyContribution}/mes por ${years} años al ${(annualReturn * 100).toFixed(1)}% anual`);
+      addActivity(`Proyección calculada: €${initialAmount} inicial + €${monthlyContribution}/mes por ${years} años al ${(totalAnnualReturn * 100).toFixed(1)}% anual (incl. dividendos)`);
       showNotification('Proyección calculada correctamente');
     }
 
     function calculateAutoReturn() {
       document.getElementById('expectedReturn').value = portfolioReturn.toFixed(1);
+      document.getElementById('dividendYield').value = portfolioDividendYield.toFixed(1);
       showNotification('Rendimiento automático calculado');
-      addActivity(`Rendimiento automático aplicado: ${portfolioReturn.toFixed(1)}%`);
+      addActivity(`Rendimiento automático aplicado: ${portfolioReturn.toFixed(1)}% + ${portfolioDividendYield.toFixed(1)}% dividendos`);
     }
 
     function refreshData() {
@@ -1571,16 +1722,26 @@
         // Pequeña variación aleatoria en los rendimientos
         const change = (Math.random() * 2 - 1); // Entre -1% y +1%
         item.annualReturn = Math.max(0, item.annualReturn + change);
+        
+        // Pequeña variación en dividendos
+        const dividendChange = (Math.random() * 0.2 - 0.1); // Entre -0.1% y +0.1%
+        item.dividendYield = Math.max(0, item.dividendYield + dividendChange);
       });
       
       investmentData.blackrock.forEach(item => {
         const change = (Math.random() * 2 - 1);
         item.annualReturn = Math.max(0, item.annualReturn + change);
+        
+        const dividendChange = (Math.random() * 0.2 - 0.1);
+        item.dividendYield = Math.max(0, item.dividendYield + dividendChange);
       });
       
       investmentData.pelosi.forEach(item => {
         const change = (Math.random() * 2 - 1);
         item.annualReturn = Math.max(0, item.annualReturn + change);
+        
+        const dividendChange = (Math.random() * 0.2 - 0.1);
+        item.dividendYield = Math.max(0, item.dividendYield + dividendChange);
       });
     }
 
